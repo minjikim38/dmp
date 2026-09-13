@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CJ DMP 오디언스 타겟팅 활용 가이드</title>
+    <style>
+        /* 1. 페이퍼로지 폰트 (눈누 CDN) */
+        @font-face {
+            font-family: 'Paperlogy';
+            font-weight: 400;
+            font-style: normal;
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-4Regular.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Paperlogy';
+            font-weight: 700;
+            font-style: normal;
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-7Bold.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Paperlogy';
+            font-weight: 900;
+            font-style: normal;
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-9Black.woff2') format('woff2');
+        }
+
+        /* 2. 전역 설정 및 스크롤 스냅 (씬 그리드 배경) */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body, html {
+            font-family: 'Paperlogy', sans-serif;
+            color: #FFFFFF;
+            height: 100vh;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory; 
+            scroll-behavior: smooth;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+            font-size: 16px;
+            
+            /* 씬 그리드 배경 */
+            background-color: #050505;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+            background-size: 40px 40px; 
+        }
+        body::-webkit-scrollbar { display: none; }
+
+        :root {
+            --point-yellow: #D4B856; 
+            --text-muted: #B5B5B5;
+            --bg-card: rgba(20, 20, 20, 0.65); 
+        }
+
+        /* 3. 공통 레이아웃 - 100vh 스냅 고정 */
+        section {
+            height: 100vh;
+            max-height: 100vh;
+            width: 100vw;
+            scroll-snap-align: start; 
+            scroll-snap-stop: always;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            padding: 3.5vh 6%; 
+            overflow: hidden;
+        }
+
+        /* 공통 헤더 */
+        .slide-header {
+            font-size: 2.2rem;
+            color: #FFFFFF;
+            margin-bottom: 1.5vh;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+        .slide-header::before {
+            content: '';
+            display: block;
+            width: 5px;
+            height: 32px;
+            background-color: var(--point-yellow);
+            border-radius: 3px;
+        }
+
+        /* 페이지 번호 */
+        .page-number {
+            position: absolute;
+            bottom: 20px;
+            right: 6%;
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.35);
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
+        /* 글래스모피즘 카드 공통 */
+        .glass-card {
+            background-color: var(--bg-card);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 28px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); 
+            transition: transform 0.4s ease, border-color 0.4s ease;
+        }
+
+        /* 슬라이드 1: 타이틀 */
+        #title-slide { text-align: center; align-items: center; justify-content: center; }
+        #title-slide h1 { font-size: 4.8rem; font-weight: 900; margin-bottom: 20px; line-height: 1.2; letter-spacing: -1px; text-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        #title-slide h1 span { color: var(--point-yellow); }
+        #title-slide p { font-size: 1.6rem; color: var(--text-muted); }
+
+        /* 슬라이드 2: 비전 */
+        .hero-text { font-size: 2rem; line-height: 1.4; font-weight: 700; }
+        .hero-text span { color: var(--point-yellow); }
+        
+        .vision-box.current { 
+            background: rgba(212, 184, 86, 0.08); 
+            border: 2px solid rgba(212, 184, 86, 0.4); 
+            border-radius: 14px; 
+            padding: 20px 24px; 
+        }
+        .vision-box.current .vision-badge { background: rgba(212, 184, 86, 0.25); color: var(--point-yellow); }
+        
+        .vision-box.future { 
+            background: rgba(255, 255, 255, 0.02); 
+            border: 1px dashed rgba(255, 255, 255, 0.15); 
+            border-radius: 14px; 
+            padding: 16px 24px; 
+            opacity: 0.9; 
+        }
+        .vision-box.future .vision-badge { background: rgba(255, 255, 255, 0.1); color: #ccc; }
+
+        .vision-badge { display: inline-block; font-size: 0.8rem; font-weight: 900; padding: 4px 10px; border-radius: 4px; }
+        .tag-wrap { display: flex; gap: 8px; flex-wrap: wrap; }
+        .tag { padding: 6px 16px; border-radius: 30px; font-weight: 700; font-size: 0.95rem; }
+
+        /* 슬라이드 3: Two-Track */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 20px; }
+        .track-badge { display: inline-block; padding: 5px 12px; background-color: var(--point-yellow); color: #000; font-weight: 900; border-radius: 6px; margin-bottom: 10px; font-size: 0.92rem; }
+        .glass-card h3 { font-size: 1.5rem; margin-bottom: 12px; font-weight: 700; color: #FFF; }
+        .strategy-desc { font-size: 1.1rem; color: #ccc; margin-bottom: 20px; line-height: 1.5; }
+        .track-detail-item { margin-bottom: 10px; font-size: 0.98rem; color: #ddd; line-height: 1.45; }
+        .track-detail-item strong { color: var(--point-yellow); }
+        .process-box { background: rgba(20, 20, 20, 0.7); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 14px; padding: 20px 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .process-title { font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+        .process-desc { font-size: 0.95rem; color: #ccc; line-height: 1.45; }
+
+        /* 슬라이드 5: 업종별 시나리오 */
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .scenario-card { padding: 22px; }
+        .scenario-card h3 { font-size: 1.35rem; color: #FFF; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: space-between; }
+        .scenario-badge { font-size: 0.78rem; background: rgba(212, 184, 86, 0.15); color: var(--point-yellow); padding: 3px 8px; border-radius: 6px; }
+        .client-need { background: rgba(255, 255, 255, 0.03); border-left: 3px solid var(--point-yellow); padding: 8px 12px; border-radius: 0 8px 8px 0; margin-bottom: 10px; font-size: 0.92rem; color: #ddd; line-height: 1.4; }
+        .client-need strong { color: var(--point-yellow); display: block; margin-bottom: 2px; font-size: 0.82rem; }
+        .solution-step { margin-bottom: 8px; }
+        .solution-step-title { font-size: 0.88rem; color: var(--point-yellow); font-weight: 700; margin-bottom: 3px; display: flex; align-items: center; gap: 5px; }
+        .solution-step-desc { font-size: 0.92rem; color: #ccc; line-height: 1.4; }
+        .persona-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 4px; }
+        .p-tag { font-size: 0.82rem; background: rgba(255,255,255,0.08); color: #ddd; padding: 2px 7px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); }
+
+        /* 슬라이드 6: Q&A */
+        .qa-container { display: flex; flex-direction: column; gap: 16px; width: 100%; }
+        .faq-box {
+            background: var(--bg-card); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 24px 28px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+        .faq-item .q { font-size: 1.1rem; font-weight: 700; color: var(--point-yellow); margin-bottom: 6px; display: block; }
+        .faq-item .a { font-size: 0.95rem; color: #ccc; line-height: 1.5; }
+        .contact-box {
+            background: rgba(212, 184, 86, 0.05); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(212, 184, 86, 0.25); border-radius: 16px; padding: 20px 28px;
+            display: flex; align-items: center; justify-content: space-between; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+        .contact-info .company { color: var(--point-yellow); font-weight: 900; font-size: 1.2rem; margin-bottom: 3px; }
+        .contact-info .team { color: #FFF; font-size: 1rem; font-weight: 700; }
+        .contact-detail { text-align: right; color: #ccc; font-size: 0.98rem; line-height: 1.4; }
+        .contact-detail strong { color: #FFF; }
+
+        .scroll-indicator { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); font-size: 1rem; color: rgba(255, 255, 255, 0.4); animation: bounce 2s infinite; }
+        @keyframes bounce { 0%, 20%, 50%, 80%, 100% { transform: translateY(0) translateX(-50%); } 40% { transform: translateY(-10px) translateX(-50%); } 60% { transform: translateY(-5px) translateX(-50%); } }
+
+        /* 모바일 반응형 */
+        @media screen and (max-width: 768px) {
+            body, html { height: auto; scroll-snap-type: none; font-size: 15px; }
+            section { height: auto; max-height: none; min-height: 100vh; padding: 40px 5%; justify-content: flex-start; }
+            .page-number, .scroll-indicator { position: relative; bottom: auto; right: auto; left: auto; text-align: center; margin-top: 25px; transform: none; }
+            .scroll-indicator { display: none; }
+            .slide-header { font-size: 1.8rem; margin-bottom: 15px; gap: 10px; }
+            .slide-header::before { width: 4px; height: 26px; }
+            #title-slide { justify-content: center; padding: 40px 5%; }
+            #title-slide h1 { font-size: 3rem; }
+            #title-slide p { font-size: 1.2rem; }
+            .grid-2, .grid-3, .process-box { grid-template-columns: 1fr; gap: 15px; }
+            .contact-box { flex-direction: column; align-items: flex-start; gap: 12px; text-align: left; }
+            .contact-detail { text-align: left; }
+            .glass-card, .faq-box, .contact-box { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. 타이틀 -->
+    <section id="title-slide">
+        <h1>CJ DMP<br><span>오디언스 타겟팅 활용 가이드</span></h1>
+        <p>광고주 KPI 달성을 위한 타겟팅 전략</p>
+        <div class="scroll-indicator">SCROLL DOWN ↓</div>
+        <div class="page-number">- 1 -</div>
+    </section>
+
+    <!-- 2. CJ 통합 DMP 개요 -->
+    <section>
+        <h2 class="slide-header">01. CJ 통합 DMP 개요</h2>
+        <div class="glass-card" style="display: flex; flex-direction: column; gap: 1.5vh; padding: 2.5vh 30px;">
+            <p class="hero-text" style="font-size: 2.1rem; margin-bottom: 0;">데이터로 완성하는 <span>통합 오디언스 타겟팅</span></p>
+            
+            <div style="display: flex; flex-direction: column; gap: 1.2vh;">
+                <!-- Current Focus -->
+                <div class="vision-box current" style="padding: 1.6vh 24px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <span class="vision-badge" style="font-size: 0.88rem; padding: 4px 12px;">CURRENT FOCUS</span>
+                        <span style="display: inline-flex; align-items: center; gap: 7px; font-size: 0.98rem; color: var(--point-yellow); font-weight: 800; background: rgba(212, 184, 86, 0.12); border: 1px solid rgba(212, 184, 86, 0.4); padding: 4px 12px; border-radius: 20px;">
+                            <span style="display: inline-block; width: 7px; height: 7px; background-color: var(--point-yellow); border-radius: 50%; box-shadow: 0 0 8px var(--point-yellow);"></span>
+                            2개월 파일럿 테스트 운영 중
+                        </span>
+                    </div>
+
+                    <h4 style="font-size: 1.35rem; color: #FFF; margin-bottom: 6px; font-weight: 700;">문화·콘텐츠 기반의 독보적 타겟팅</h4>
+                    <p style="font-size: 1.05rem; color: #E0E0E0; line-height: 1.5; margin-bottom: 14px;">
+                        데모(성별·연령) 타겟팅을 넘어, <strong>4개 핵심 플랫폼의 실제 시청 이력·광고 반응·콘텐츠 화제성</strong>을 통합한 오디언스 프로파일 효과를 집중 검증하고 있습니다.
+                    </p>
+
+                    <!-- 4개사 데이터 축 -->
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+                        <!-- 웨이브 -->
+                        <div style="background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(212, 184, 86, 0.35); border-radius: 10px; padding: 12px 10px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                            <div style="height: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 6px;">
+                                <svg width="95" height="22" viewBox="0 0 105 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="12" cy="12" r="11" fill="url(#wavve_grad)"/>
+                                    <path d="M10 7.5L16 12L10 16.5V7.5Z" fill="#FFFFFF"/>
+                                    <text x="28" y="17" fill="#FFFFFF" font-size="14" font-weight="900" letter-spacing="-0.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">wavve</text>
+                                    <defs>
+                                        <linearGradient id="wavve_grad" x1="1" y1="1" x2="23" y2="23" gradientUnits="userSpaceOnUse">
+                                            <stop stop-color="#00D2FF"/>
+                                            <stop offset="1" stop-color="#004FFF"/>
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
+                            </div>
+                            <div style="font-size: 1.05rem; font-weight: 800; color: #FFF; margin-bottom: 4px; letter-spacing: -0.3px;">웨이브 <span style="font-size: 0.88rem; color: #D4B856; font-weight: 700;">[OTT]</span></div>
+                            <div style="font-size: 0.90rem; color: #CCC; line-height: 1.35;">실시간/VOD 시청 이력<br>콘텐츠 선호 스펙트럼</div>
+                        </div>
+
+                        <!-- 엠넷플러스 -->
+                        <div style="background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(212, 184, 86, 0.35); border-radius: 10px; padding: 12px 10px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                            <div style="height: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 6px;">
+                                <svg width="105" height="22" viewBox="0 0 115 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <rect x="2" y="2" width="20" height="20" rx="6" fill="#FF007A"/>
+                                    <text x="6" y="16" fill="#FFFFFF" font-size="12" font-weight="900" font-family="-apple-system, BlinkMacSystemFont, sans-serif">M</text>
+                                    <path d="M17 9V15M14 12H20" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+                                    <text x="28" y="17" fill="#FFFFFF" font-size="13" font-weight="800" font-family="-apple-system, BlinkMacSystemFont, sans-serif">net</text>
+                                    <text x="56" y="17" fill="#FF007A" font-size="14" font-weight="900" font-family="-apple-system, BlinkMacSystemFont, sans-serif">PLUS</text>
+                                </svg>
+                            </div>
+                            <div style="font-size: 1.05rem; font-weight: 800; color: #FFF; margin-bottom: 4px; letter-spacing: -0.3px;">엠넷플러스 <span style="font-size: 0.88rem; color: #D4B856; font-weight: 700;">[팬덤]</span></div>
+                            <div style="font-size: 0.90rem; color: #CCC; line-height: 1.35;">글로벌 K-POP 팬덤<br>투표·참여 고관여 데이터</div>
+                        </div>
+
+                        <!-- SKB -->
+                        <div style="background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(212, 184, 86, 0.35); border-radius: 10px; padding: 12px 10px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                            <div style="height: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 6px;">
+                                <svg width="110" height="22" viewBox="0 0 120 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M5 14C8 8 13 8 15 13C12 12 8 12 5 14Z" fill="#EA002C"/>
+                                    <path d="M12 14C15 6 22 7 24 13C20 12 15 12 12 14Z" fill="#F47920"/>
+                                    <text x="27" y="17" fill="#FFFFFF" font-size="13" font-weight="900" font-family="-apple-system, BlinkMacSystemFont, sans-serif">SK</text>
+                                    <text x="47" y="17" fill="#DDD" font-size="11" font-weight="600" font-family="-apple-system, BlinkMacSystemFont, sans-serif">broadband</text>
+                                </svg>
+                            </div>
+                            <div style="font-size: 1.05rem; font-weight: 800; color: #FFF; margin-bottom: 4px; letter-spacing: -0.3px;">SKB <span style="font-size: 0.88rem; color: #D4B856; font-weight: 700;">[IPTV]</span></div>
+                            <div style="font-size: 0.90rem; color: #CCC; line-height: 1.35;">가구 단위 TV 시청 형태<br>셋톱 인덱스</div>
+                        </div>
+
+                        <!-- 메조미디어 -->
+                        <div style="background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(212, 184, 86, 0.35); border-radius: 10px; padding: 12px 10px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                            <div style="height: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 6px;">
+                                <svg width="115" height="22" viewBox="0 0 125 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="6" cy="11" r="3.2" fill="#E02020"/>
+                                    <circle cx="11" cy="7" r="3.2" fill="#F8B100"/>
+                                    <circle cx="11" cy="15" r="3.2" fill="#0055A5"/>
+                                    <text x="18" y="16" fill="#FFFFFF" font-size="12" font-weight="900" font-family="-apple-system, BlinkMacSystemFont, sans-serif">CJ</text>
+                                    <text x="35" y="16" fill="#FFFFFF" font-size="10.5" font-weight="700" letter-spacing="-0.3" font-family="-apple-system, BlinkMacSystemFont, sans-serif">MEZZOMEDIA</text>
+                                </svg>
+                            </div>
+                            <div style="font-size: 1.05rem; font-weight: 800; color: #FFF; margin-bottom: 4px; letter-spacing: -0.3px;">메조미디어 <span style="font-size: 0.88rem; color: #D4B856; font-weight: 700;">[광고반응]</span></div>
+                            <div style="font-size: 0.90rem; color: #CCC; line-height: 1.35;">디지털 광고 반응<br>관심사 프로파일링</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Future Vision -->
+                <div class="vision-box future" style="padding: 1.4vh 24px;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                        <span class="vision-badge" style="font-size: 0.8rem; padding: 3px 8px;">FUTURE VISION</span>
+                        <h4 style="font-size: 1.15rem; color: #FFF; margin: 0; font-weight: 700;">CJ 그룹 라이프스타일 데이터 연계 확장</h4>
+                    </div>
+                    <p style="font-size: 0.98rem; color: #CCC; line-height: 1.45; margin: 0;">
+                        CGV, CJ ONE, 온스타일 등 향후 커머스·컬처 계열사 데이터를 결합하여 미디어 시청을 넘어 구매·체험까지 아우르는 <strong>통합 라이프스타일 프로파일</strong>로 고도화 예정
+                    </p>
+                </div>
+            </div>
+
+            <div class="tag-wrap" style="margin-top: 4px;">
+                <span class="tag" style="background: rgba(0, 210, 255, 0.12); border: 1px solid rgba(0, 210, 255, 0.4); color: #a5f3fc;">#웨이브(OTT)</span>
+                <span class="tag" style="background: rgba(255, 0, 122, 0.12); border: 1px solid rgba(255, 0, 122, 0.4); color: #fbcfe8;">#엠넷플러스(팬덤)</span>
+                <span class="tag" style="background: rgba(255, 75, 0, 0.12); border: 1px solid rgba(255, 75, 0, 0.4); color: #fed7aa;">#SKB(IPTV)</span>
+                <span class="tag" style="background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.4); color: #f4f4f5;">#메조미디어(광고반응)</span>
+                <span class="tag" style="background: rgba(212, 184, 86, 0.15); border: 1px dashed var(--point-yellow); color: var(--point-yellow);">#CGV·CJ ONE 계열사 확장 (협의중)</span>
+            </div>
+        </div>
+        <div class="page-number">- 2 -</div>
+    </section>
+
+<!-- 3-1. 핵심 활용 전략: Track 1 (브랜딩 & 도달) -->
+    <section id="slide-track-1">
+        <div style="margin-bottom: 2.5vh; flex-shrink: 0;">
+            <h2 class="slide-header" style="margin-bottom: 6px;">02. 활용 전략 ①: 4사 통합 프로파일</h2>
+            <p class="strategy-desc" style="margin-bottom: 0; font-size: 1.15rem; color: #BBB;">
+                콘텐츠 소비 패턴과 취향을 엮어, <strong style="color: var(--point-yellow);">넓은 도달(Reach)</strong>과 <strong style="color: #FFF;">정교한 관심사 매칭</strong>을 동시에 달성합니다.
+            </p>
+        </div>
+
+        <!-- Track 1 메인 전략 그리드 (2단 와이드 구조로 안정감 확보) -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+            <!-- 카드 1: 데이터 결합 축 -->
+            <div class="glass-card" style="padding: 28px;">
+                <span class="track-badge" style="background-color: var(--point-yellow); color: #000;">DATA SOURCE</span>
+                <h3 style="font-size: 1.35rem; margin-top: 8px; margin-bottom: 12px; color: #FFF;">4대 플랫폼 크로스 결합</h3>
+                <p style="font-size: 1.02rem; color: #CCC; line-height: 1.6; margin-bottom: 16px;">
+                    웨이브(OTT), 엠넷플러스(팬덤), SKB(IPTV), 메조미디어(AD)의 <strong>시청 이력·검색·관심사 데이터</strong>를 유기적으로 통합 프로파일링합니다.
+                </p>
+                <div style="font-size: 0.92rem; color: var(--point-yellow); background: rgba(212, 184, 86, 0.1); padding: 10px 14px; border-radius: 6px;">
+                    단순 인구통계를 넘어 실제 미디어 라이프스타일과 콘텐츠 선호도를 대변
+                </div>
+            </div>
+
+            <!-- 카드 2: 적용 시점 & 전략 목표 -->
+            <div class="glass-card" style="padding: 28px;">
+                <span class="track-badge" style="background-color: rgba(255, 255, 255, 0.15); color: #FFF;">OBJECTIVE</span>
+                <h3 style="font-size: 1.35rem; margin-top: 8px; margin-bottom: 12px; color: #FFF;">추천 캠페인 및 목표</h3>
+                <ul style="list-style: none; font-size: 1.02rem; color: #CCC; line-height: 1.7; display: flex; flex-direction: column; gap: 8px;">
+                    <li><strong style="color: #FFF;">· 신제품 런칭 & 브랜딩</strong>: 초기 대세감 형성 및 인지도 극대화</li>
+                    <li><strong style="color: #FFF;">· 대규모 타겟 저변 확대</strong>: 폭넓은 대중적 관심사 유저 확보</li>
+                    <li><strong style="color: #FFF;">· 팬덤·장르 타겟팅</strong>: 고관여 문화 콘텐츠 충성 고객군 매칭</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 하단 연계 솔루션: Audience Report (미디어 플래닝 & 예산 최적화로 고도화) -->
+        <div class="process-box" style="padding: 22px 28px; background: rgba(20, 20, 20, 0.75); border: 1px solid rgba(212, 184, 86, 0.25); border-radius: 14px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.25rem;">📊</span>
+                    <span style="font-size: 1.15rem; font-weight: 800; color: #FFF;">
+                        <strong style="color: var(--point-yellow); text-decoration: underline; text-underline-offset: 4px;">Audience Report 연계</strong>: 타겟의 미디어 동선을 사전에 진단하세요!
+                    </span>
+                </div>
+                <span style="font-size: 0.85rem; color: var(--point-yellow); background: rgba(212, 184, 86, 0.15); border: 1px solid rgba(212, 184, 86, 0.4); padding: 4px 12px; border-radius: 20px; font-weight: 700;">
+                    미디어 믹스 & 예산 최적화
+                </span>
+            </div>
+            <p style="font-size: 0.98rem; color: #DDD; line-height: 1.6; margin: 0; width: 100%;">
+                타겟의 <strong>채널 교차이용 패턴(TV·OTT·모바일)과 활동 시간대</strong>를 심층 분석하여, 캠페인 집행 전 <strong>가장 적합한 매체 믹스 비율과 집중 송출 시간대(Dayparting)</strong>를 데이터 기반으로 도출합니다.
+            </p>
+        </div>
+
+        <div class="page-number">- 3 -</div>
+    </section>
+
+    <!-- 3-2. 핵심 활용 전략: Track 2 (퍼포먼스 & 최적화) -->
+    <section id="slide-track-2">
+        <div style="margin-bottom: 2.5vh; flex-shrink: 0;">
+            <h2 class="slide-header" style="margin-bottom: 6px;">02. 활용 전략 ②: 고효율 ADID (퍼포먼스 최적화)</h2>
+            <p class="strategy-desc" style="margin-bottom: 0; font-size: 1.15rem; color: #BBB;">
+                광고 반응 이력이 검증된 모수를 타겟팅하여, <strong style="color: #E2C96E;">전환율(CVR)</strong>과 <strong style="color: #FFF;">매출 효율(ROAS)</strong>을 극대화합니다.
+            </p>
+        </div>
+
+        <!-- Track 2 메인 전략 그리드 (2단 와이드 구조로 안정감 확보) -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+            <!-- 카드 1: 데이터 결합 축 -->
+            <div class="glass-card" style="padding: 28px;">
+                <span class="track-badge" style="background-color: #E2C96E; color: #000;">DATA SOURCE</span>
+                <h3 style="font-size: 1.35rem; margin-top: 8px; margin-bottom: 12px; color: #FFF;">검증된 광고 반응 (Action)</h3>
+                <p style="font-size: 1.02rem; color: #CCC; line-height: 1.6; margin-bottom: 16px;">
+                    매체 플랫폼 내 노출, 클릭, 체류 등 <strong>뚜렷한 반응(Action) 이력을 가진 ADID 모수</strong>를 정밀 필터링하여 구축합니다.
+                </p>
+                <div style="font-size: 0.92rem; color: #E2C96E; background: rgba(226, 201, 110, 0.1); padding: 10px 14px; border-radius: 6px;">
+                    단순 유입을 넘어 실제 구매·설치 행동 확률이 가장 높은 전환 핵심 군집
+                </div>
+            </div>
+
+            <!-- 카드 2: 적용 시점 & 전략 목표 -->
+            <div class="glass-card" style="padding: 28px;">
+                <span class="track-badge" style="background-color: rgba(255, 255, 255, 0.15); color: #FFF;">OBJECTIVE</span>
+                <h3 style="font-size: 1.35rem; margin-top: 8px; margin-bottom: 12px; color: #FFF;">추천 캠페인 및 목표</h3>
+                <ul style="list-style: none; font-size: 1.02rem; color: #CCC; line-height: 1.7; display: flex; flex-direction: column; gap: 8px;">
+                    <li><strong style="color: #FFF;">· ROAS & CVR 극대화</strong>: 단기 전환 중심 성과형 퍼포먼스 달성</li>
+                    <li><strong style="color: #FFF;">· 프로모션·기획전 세일즈</strong>: 장바구니 담기 및 직접 구매 견인</li>
+                    <li><strong style="color: #FFF;">· Track 1과의 교집합(AND)</strong>: 취향+고반응 결합 초정밀 압축 타겟팅</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 하단 연계 솔루션: Lookalike -->
+        <div class="process-box" style="padding: 22px 28px; background: rgba(20, 20, 20, 0.75); border: 1px solid rgba(226, 201, 110, 0.25); border-radius: 14px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.25rem;">🎯</span>
+                    <span style="font-size: 1.15rem; font-weight: 800; color: #FFF;">
+                        <strong style="color: #E2C96E; text-decoration: underline; text-underline-offset: 4px;">Lookalike 유사 확장 연계</strong>: 모수가 부족하다면? AI 유사 타겟으로 스케일업하세요!
+                    </span>
+                </div>
+                <span style="font-size: 0.85rem; color: #E2C96E; background: rgba(226, 201, 110, 0.15); border: 1px solid rgba(226, 201, 110, 0.4); padding: 4px 12px; border-radius: 20px; font-weight: 700;">
+                    모수 확장 파이프라인
+                </span>
+            </div>
+            <p style="font-size: 0.98rem; color: #DDD; line-height: 1.6; margin: 0; width: 100%;">
+                고반응 세그먼트를 Seed로 지정해 유사한 행동·특성을 가진 고가치 유저를 발굴하여 <strong>효율 저하 없이 안정적으로 모수를 확장</strong>합니다.
+            </p>
+        </div>
+
+        <div class="page-number">- 4 -</div>
+    </section>
+
+    <!-- 4. 오디언스 페르소나 군집 가이드 슬라이드 -->
+    <section id="slide-audience-list">
+        
+        <!-- 슬라이드 헤더 & 서브 타이틀 -->
+        <div style="margin-bottom: 1.5vh; flex-shrink: 0;">
+            <h2 class="slide-header" style="margin-bottom: 4px;">03. 오디언스 타겟 리스트</h2>
+            <p style="font-size: 1rem; color: #BBB; line-height: 1.4;">
+                캠페인 목적(<strong style="color: #D4B856;">브랜딩·팬덤·퍼포먼스</strong>)에 최적화된 3개 전략 트랙, <strong style="color: #FFF;">총 34개 세그먼트</strong> 전수 현황입니다.
+            </p>
+        </div>
+
+        <!-- 3개 트랙 메인 그리드 컨테이너 -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1.35fr; gap: 16px; align-items: stretch;">
+            
+            <!-- [트랙 1] 브랜딩·대중 트랙 -->
+            <div class="glass-card" style="padding: 18px 16px; display: flex; flex-direction: column; gap: 10px; background: rgba(22, 22, 22, 0.75);">
+                <!-- 트랙 헤더 -->
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(212, 184, 86, 0.25); padding-bottom: 8px;">
+                    <div>
+                        <span style="font-size: 0.72rem; font-weight: 800; color: #050505; background: #D4B856; padding: 2px 6px; border-radius: 3px; display: inline-block; margin-bottom: 3px;">TRACK 01</span>
+                        <div style="font-size: 1.15rem; font-weight: 900; color: #FFF; letter-spacing: -0.5px;">브랜딩 · 대중 도달</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="font-size: 0.75rem; color: #888; display: block;">6개 세그먼트</span>
+                        <span style="font-size: 0.9rem; font-weight: 800; color: #D4B856; font-feature-settings: 'tnum';">약 743만</span>
+                    </div>
+                </div>
+
+                <!-- 세부 그룹 리스트 -->
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <!-- 1Depth 그룹 1 -->
+                    <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 6px; padding: 8px 10px;">
+                        <div style="font-size: 0.8rem; font-weight: 800; color: #D4B856; margin-bottom: 5px; display: flex; align-items: center; gap: 5px;">
+                            <span style="width: 4px; height: 4px; background: #D4B856; border-radius: 50%;"></span>취향 확고·확장형
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.84rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; color: #E5E5E5;">
+                                <span>장르 확장형</span>
+                                <strong style="color: #FFF; font-feature-settings: 'tnum';">2,664,081</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; color: #E5E5E5;">
+                                <span>스타·IP 선호 고정형</span>
+                                <strong style="color: #FFF; font-feature-settings: 'tnum';">1,552</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 1Depth 그룹 2 -->
+                    <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 6px; padding: 8px 10px;">
+                        <div style="font-size: 0.8rem; font-weight: 800; color: #D4B856; margin-bottom: 5px; display: flex; align-items: center; gap: 5px;">
+                            <span style="width: 4px; height: 4px; background: #D4B856; border-radius: 50%;"></span>화제 동참형
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.84rem; color: #E5E5E5;">
+                            <span>대중 콘텐츠 소비형</span>
+                            <strong style="color: #FFF; font-feature-settings: 'tnum';">1,380,241</strong>
+                        </div>
+                    </div>
+
+                    <!-- 1Depth 그룹 3 -->
+                    <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 6px; padding: 8px 10px;">
+                        <div style="font-size: 0.8rem; font-weight: 800; color: #D4B856; margin-bottom: 5px; display: flex; align-items: center; gap: 5px;">
+                            <span style="width: 4px; height: 4px; background: #D4B856; border-radius: 50%;"></span>모먼트 몰입형
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.84rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; color: #E5E5E5;">
+                                <span>출퇴근 콘텐츠형</span>
+                                <strong style="color: #FFF; font-feature-settings: 'tnum';">1,659,398</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; color: #E5E5E5;">
+                                <span>심야 몰입형</span>
+                                <strong style="color: #FFF; font-feature-settings: 'tnum';">934,727</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; color: #E5E5E5;">
+                                <span>주말 홈시청형</span>
+                                <strong style="color: #FFF; font-feature-settings: 'tnum';">476,988</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- [트랙 2] 팬심·콘텐츠 트랙 -->
+            <div class="glass-card" style="padding: 18px 16px; display: flex; flex-direction: column; gap: 10px; background: rgba(22, 22, 22, 0.75);">
+                <!-- 트랙 헤더 -->
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(220, 100, 120, 0.25); padding-bottom: 8px;">
+                    <div>
+                        <span style="font-size: 0.72rem; font-weight: 800; color: #FFF; background: #DC6478; padding: 2px 6px; border-radius: 3px; display: inline-block; margin-bottom: 3px;">TRACK 02</span>
+                        <div style="font-size: 1.15rem; font-weight: 900; color: #FFF; letter-spacing: -0.5px;">팬심 · 고관여 콘텐츠</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="font-size: 0.75rem; color: #888; display: block;">9개 세그먼트</span>
+                        <span style="font-size: 0.9rem; font-weight: 800; color: #DC6478; font-feature-settings: 'tnum';">약 449만</span>
+                    </div>
+                </div>
+
+                <!-- 세부 그룹 리스트 -->
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <!-- 1Depth 그룹 1 -->
+                    <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 6px; padding: 8px 10px;">
+                        <div style="font-size: 0.8rem; font-weight: 800; color: #DC6478; margin-bottom: 5px; display: flex; align-items: center; gap: 5px;">
+                            <span style="width: 4px; height: 4px; background: #DC6478; border-radius: 50%;"></span>팬심 몰입형
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.84rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; color: #E5E5E5;">
+                                <span>멀티 팬덤형</span>
+                                <strong style="color: #FFF; font-feature-settings: 'tnum';">2,412,971</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; color: #E5E5E5;">
+                                <span>코어 팬형</span>
+                                <strong style="color: #FFF; font-feature-settings: 'tnum';">306,930</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; color: #E5E5E5;">
+                                <span>참여형 팬</span>
+                                <strong style="color: #FFF; font-feature-settings: 'tnum';">186,266</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 1Depth 그룹 2 -->
+                    <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 6px; padding: 8px 10px;">
+                        <div style="font-size: 0.8rem; font-weight: 800; color: #DC6478; margin-bottom: 5px; display: flex; align-items: center; gap: 5px;">
+                            <span style="width: 4px; height: 4px; background: #DC6478; border-radius: 50%;"></span>콘텐츠 취향 몰입형
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.84rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; color: #E5E5E5;">
+                                <span>라이트 스낵 시청형</span>
+                                <strong style="color: #FFF; font-feature-settings: 'tnum';">870,804</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; color: #E5E5E5;">
+                                <span>뮤직·퍼포먼스 라이브형</span>
+                                <strong style="color: #FFF; font-feature-settings: 'tnum';">485,296</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; color: #E5E5E5;">
+                                <span>세계관·IP 딥다이버</span>
+                                <strong style="color: #FFF; font-feature-settings: 'tnum';">95,755</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; color: #E5E5E5;">
+                                <span>코어 장르물 심야</span>
+                                <strong style="color: #FFF; font-feature-settings: 'tnum';">73,201</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; color: #E5E5E5;">
+                                <span>로맨스·배우 몰입형</span>
+                                <strong style="color: #FFF; font-feature-settings: 'tnum';">63,677</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; color: #E5E5E5;">
+                                <span>해외 시리즈 VOD</span>
+                                <strong style="color: #FFF; font-feature-settings: 'tnum';">28,511</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- [트랙 3] 라이프 & 퍼포먼스 트랙 -->
+            <div class="glass-card" style="padding: 18px 16px; display: flex; flex-direction: column; gap: 10px; background: rgba(22, 22, 22, 0.75);">
+                <!-- 트랙 헤더 -->
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(70, 130, 240, 0.25); padding-bottom: 8px;">
+                    <div>
+                        <span style="font-size: 0.72rem; font-weight: 800; color: #FFF; background: #4682F0; padding: 2px 6px; border-radius: 3px; display: inline-block; margin-bottom: 3px;">TRACK 03</span>
+                        <div style="font-size: 1.15rem; font-weight: 900; color: #FFF; letter-spacing: -0.5px;">라이프스타일 & 액션(CVR)</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="font-size: 0.75rem; color: #888; display: block;">19개 세그먼트</span>
+                        <span style="font-size: 0.9rem; font-weight: 800; color: #4682F0; font-feature-settings: 'tnum';">ADID 결합형</span>
+                    </div>
+                </div>
+
+                <!-- 세부 그룹 리스트 -->
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    
+                    <!-- 1Depth 그룹 1: 라이프 스테이지 & 관심사 -->
+                    <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 6px; padding: 8px 10px;">
+                        <div style="font-size: 0.8rem; font-weight: 800; color: #6EA8FE; margin-bottom: 5px; display: flex; align-items: center; gap: 5px;">
+                            <span style="width: 4px; height: 4px; background: #6EA8FE; border-radius: 50%;"></span>라이프 스테이지 및 관심사
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; font-size: 0.84rem; color: #E5E5E5;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;"><span>밀레니얼 홈엔터</span><strong style="color: #FFF; font-feature-settings: 'tnum';">2,146,418</strong></div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;"><span>패밀리 동반시청</span><strong style="color: #FFF; font-feature-settings: 'tnum';">2,430,383</strong></div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;"><span>Z세대 트렌드탐색</span><strong style="color: #FFF; font-feature-settings: 'tnum';">684,210</strong></div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;"><span>여행·아웃도어 로망</span><strong style="color: #FFF; font-feature-settings: 'tnum';">2,385,188</strong></div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;"><span>싱글 라이프 홈엔터</span><strong style="color: #FFF; font-feature-settings: 'tnum';">141,578</strong></div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;"><span>미식·홈라이프 발견</span><strong style="color: #FFF; font-feature-settings: 'tnum';">2,245,792</strong></div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;"><span>웰니스 정보탐색</span><strong style="color: #FFF; font-feature-settings: 'tnum';">1,818,124</strong></div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;"><span>정보 심층 탐구</span><strong style="color: #FFF; font-feature-settings: 'tnum';">732,401</strong></div>
+                        </div>
+                    </div>
+
+                    <!-- 1Depth 그룹 2: 고효율 퍼포먼스 광고 반응형 -->
+                    <div style="background: rgba(70, 130, 240, 0.05); border: 1px solid rgba(70, 130, 240, 0.25); border-radius: 6px; padding: 8px 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                            <span style="font-size: 0.8rem; font-weight: 800; color: #93B8FF; display: flex; align-items: center; gap: 5px;">
+                                <span style="width: 4px; height: 4px; background: #4682F0; border-radius: 50%;"></span>고효율 퍼포먼스 반응형 (Action)
+                            </span>
+                            <span style="font-size: 0.74rem; color: #6EA8FE; font-weight: 700;">전환 최적화 추천</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; font-size: 0.84rem; color: #E5E5E5;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;"><span>리마인드반응형</span><strong style="color: #FFF; font-feature-settings: 'tnum';">1,563,242</strong></div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;"><span>음료/기호식품 취향반응형</span><strong style="color: #FFF; font-feature-settings: 'tnum';">713,225</strong></div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;"><span>다관심반응형</span><strong style="color: #FFF; font-feature-settings: 'tnum';">1,033,383</strong></div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;"><span>크로스지면반응형</span><strong style="color: #FFF; font-feature-settings: 'tnum';">452,677</strong></div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;"><span>즉각반응형</span><strong style="color: #FFF; font-feature-settings: 'tnum';">918,667</strong></div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;"><span>컴퓨터/통신 취향반응형</span><strong style="color: #FFF; font-feature-settings: 'tnum';">64,614</strong></div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;"><span>서비스 취향반응형</span><strong style="color: #FFF; font-feature-settings: 'tnum';">50,809</strong></div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;"><span>식품 취향반응형</span><strong style="color: #FFF; font-feature-settings: 'tnum';">42,505</strong></div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;"><span>유통 취향반응형</span><strong style="color: #FFF; font-feature-settings: 'tnum';">32,873</strong></div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;"><span>화장품/보건 취향반응형</span><strong style="color: #FFF; font-feature-settings: 'tnum';">17,097</strong></div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 하단 데이터 메타 정보 바 -->
+        <div style="margin-top: 12px; padding: 6px 14px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: #888; flex-shrink: 0;">
+            <div>
+                <span style="color: #D4B856; font-weight: 700;">Tip</span> 각 세그먼트는 캠페인 목적에 맞춰 <strong>단독 타겟팅</strong> 또는 <strong>교집합(AND) 조합</strong>으로 맞춤형 추출이 가능합니다.
+            </div>
+            <div>
+                데이터 기준일: <strong>2026-09-09</strong> (최근 90일 활성 이력 기준)
+            </div>
+        </div>
+
+        <div class="page-number">- 5 -</div>
+    </section>
+
+    <!-- 5. 업종별 타겟팅 및 활용 시나리오 -->
+    <section>
+        <h2 class="slide-header">04. 업종별 타겟팅 및 활용 시나리오</h2>
+        <div class="grid-3">
+            
+            <!-- 1. 영화 / 엔터 -->
+            <div class="glass-card scenario-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <h3>영화 / 엔터 <span class="scenario-badge">Branding & CVR</span></h3>
+                    
+                    <div class="client-need">
+                        <strong>캠페인 상황 (목적)</strong>
+                        "개봉 첫 주 박스오피스 1위 선점 & 스크린 수 사수"
+                    </div>
+
+                    <div class="solution-step">
+                        <span class="solution-step-title" style="color: #fff;">타겟 페르소나</span>
+                        <p class="solution-step-desc" style="font-weight: 700; color: var(--point-yellow); margin-top: 2px;">
+                            "돈 내고 콘텐츠 완주하는 고관여 시네필"
+                        </p>
+                    </div>
+
+                    <div class="solution-step">
+                        <span class="solution-step-title">🎯 DMP 오디언스 타겟팅 매칭</span>
+                        <div class="persona-tags" style="margin-top: 4px; display: flex; flex-direction: column; gap: 3px;">
+                            <div style="font-size: 0.82rem; color: #aaa;">[콘텐츠·모먼트]</div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                                <span class="p-tag">코어 장르물 심야</span>
+                                <span class="p-tag">심야 몰입형</span>
+                            </div>
+                            <div style="font-size: 0.82rem; color: var(--point-yellow); margin-top: 2px;">[광고 고반응]</div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                                <span class="p-tag" style="border-color: rgba(212,184,86,0.4);">즉각반응형</span>
+                                <span class="p-tag" style="border-color: rgba(212,184,86,0.4);">다관심반응형</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.12); font-size: 0.92rem;">
+                    <span style="color: #6EA8FE; font-weight: 700;">기대 효과:</span>
+                    <span style="color: #ddd;"> 허수 배제 ➔ <strong>사전 예매율(CVR) 극대화</strong></span>
+                </div>
+            </div>
+
+            <!-- 2. F&B / 외식 -->
+            <div class="glass-card scenario-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <h3>F&B / 외식 <span class="scenario-badge">Sales & Peak</span></h3>
+                    
+                    <div class="client-need">
+                        <strong>캠페인 상황 (목적)</strong>
+                        "주말 피크타임 배달 주문 건수 폭발 & 주말 매출 견인"
+                    </div>
+
+                    <div class="solution-step">
+                        <span class="solution-step-title" style="color: #fff;">타겟 페르소나</span>
+                        <p class="solution-step-desc" style="font-weight: 700; color: var(--point-yellow); margin-top: 2px;">
+                            "TV 틀어놓고 배달앱 켜는 홈엔터 야식러"
+                        </p>
+                    </div>
+
+                    <div class="solution-step">
+                        <span class="solution-step-title">🎯 DMP 세그먼트 매칭</span>
+                        <div class="persona-tags" style="margin-top: 4px; display: flex; flex-direction: column; gap: 3px;">
+                            <div style="font-size: 0.82rem; color: #aaa;">[라이프·모먼트]</div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                                <span class="p-tag">미식·홈라이프 발견</span>
+                                <span class="p-tag">주말 홈시청형</span>
+                            </div>
+                            <div style="font-size: 0.82rem; color: var(--point-yellow); margin-top: 2px;">[광고 고반응]</div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                                <span class="p-tag" style="border-color: rgba(212,184,86,0.4);">식품 취향반응형</span>
+                                <span class="p-tag" style="border-color: rgba(212,184,86,0.4);">음료/기호식품 취향반응형</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.12); font-size: 0.92rem;">
+                    <span style="color: #6EA8FE; font-weight: 700;">기대 효과:</span>
+                    <span style="color: #ddd;"> 즉시 주문 ➔ <strong>주말 매출 및 ROAS 직결</strong></span>
+                </div>
+            </div>
+
+            <!-- 3. 뷰티 / 소비재 -->
+            <div class="glass-card scenario-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <h3>뷰티 / 소비재 <span class="scenario-badge">Viral & Rank</span></h3>
+                    
+                    <div class="client-need">
+                        <strong>캠페인 상황 (목적)</strong>
+                        "프로모션 기간에 랭킹 1위 탈환 & 입소문 확산"
+                    </div>
+
+                    <div class="solution-step">
+                        <span class="solution-step-title" style="color: #fff;">타겟 페르소나</span>
+                        <p class="solution-step-desc" style="font-weight: 700; color: var(--point-yellow); margin-top: 2px;">
+                            "뷰티 핫템에 즉각 반응하는 1030 쇼퍼"
+                        </p>
+                    </div>
+
+                    <div class="solution-step">
+                        <span class="solution-step-title">🎯 DMP 세그먼트 매칭</span>
+                        <div class="persona-tags" style="margin-top: 4px; display: flex; flex-direction: column; gap: 3px;">
+                            <div style="font-size: 0.82rem; color: #aaa;">[팬심·라이프]</div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                                <span class="p-tag">Z세대 트렌드탐색</span>
+                                <span class="p-tag">멀티 팬덤형</span>
+                            </div>
+                            <div style="font-size: 0.82rem; color: var(--point-yellow); margin-top: 2px;">[광고 고반응]</div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                                <span class="p-tag" style="border-color: rgba(212,184,86,0.4);">화장품/보건 취향반응형</span>
+                                <span class="p-tag" style="border-color: rgba(212,184,86,0.4);">리마인드반응형</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.12); font-size: 0.92rem;">
+                    <span style="color: #6EA8FE; font-weight: 700;">기대 효과:</span>
+                    <span style="color: #ddd;"> 구매 전환 ➔ <strong>랭킹 선점 & 자연 바이럴</strong></span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 하단 기대효과 3줄 요약 박스 -->
+        <div style="margin-top: 16px; background: rgba(212, 184, 86, 0.05); border: 1px solid rgba(212, 184, 86, 0.25); border-radius: 12px; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-shrink: 0;">
+            <div style="font-size: 1.1rem; color: var(--point-yellow); font-weight: 800; white-space: nowrap;">
+                CJ DMP 활용 핵심 가치
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px; flex-grow: 1; font-size: 0.92rem; color: #ddd; line-height: 1.35;">
+                <div><strong style="color: #FFF;">01｜입체적 타겟팅</strong>: 미디어 시청(OTT·IPTV·팬덤)과 실제 광고 반응(ADID) 결합으로 타겟 진성도 확보</div>
+                <div><strong style="color: #FFF;">02｜정밀한 세그먼트</strong>: 모호한 관심사 체크를 벗어나 실제 라이프스타일 페르소나 단위로 타겟 추출</div>
+                <div><strong style="color: #FFF;">03｜직결되는 퍼포먼스</strong>: 광고 피로도와 예산 낭비를 줄여 캠페인 목표 직결 달성</div>
+            </div>
+        </div>
+
+        <div class="page-number">- 6 -</div>
+    </section>
+
+    <!-- 6. Q&A -->
+    <section>
+        <h2 class="slide-header">05. Q&A</h2>
+        
+        <div class="qa-container">
+            <div class="faq-box" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="faq-item">
+                    <span class="q">Q. 타겟팅 추출에는 얼마나 걸리나요?</span>
+                    <p class="a">기본 오디언스 타겟은 즉시 추출 가능하며, 맞춤형 타겟 역시 1~2분 내외로 신속하게 추출이 가능합니다.</p>
+                </div>
+                <div class="faq-item">
+                    <span class="q">Q. 타 매체 네트워크에도 적용 가능한가요?</span>
+                    <p class="a">메조미디어 타겟픽(TargetPick)과 연동할 수 있으며, 상세한 연동 가이드는 <strong>크로스미디어솔루션팀</strong>으로 문의해 주시기 바랍니다.</p>
+                </div>
+                <div class="faq-item">
+                    <span class="q">Q. 메조미디어 DATAMAX와의 차별점은 무엇인가요?</span>
+                    <p class="a">기존 데이터에 CJ 계열사(웨이브, 엠넷플러스 등)의 문화·콘텐츠 소비 이력이 통합 분석된 오디언스 DMP라는 점이 가장 큰 특징입니다.</p>
+                </div>
+                <div class="faq-item">
+                    <span class="q">Q. 프로파일이 지속적으로 업데이트되나요?</span>
+                    <p class="a">실제 캠페인에 활용해 보신 뒤 피드백이나 개선 의견을 주시면, 유관 부서와의 취합 및 검토를 통해 고도화될 예정입니다.</p>
+                </div>
+            </div>
+
+            <div class="contact-box">
+                <div class="contact-info">
+                    <div class="company">CJ MezzoMedia</div>
+                    <div class="team">AX팀</div>
+                </div>
+                <div class="contact-detail">
+                    CJ DMP 관련 문의<br>
+                    <strong>담당자: AX팀 김민지</strong> (mj.kim174@cj.net)
+                </div>
+            </div>
+        </div>
+
+        <div class="page-number">- 7 -</div>
+    </section>
+
+</body>
+</html>
